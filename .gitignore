@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+browser_data/
+data/*.json
+!data/.gitkeep
+
+.idea/

@@ -1,0 +1,81 @@
+# CarBot
+
+Telegram bot for ranking used car listings with an LLM and a local cache.
+
+## Flow
+
+1. User sends an Auto.ru search URL with filters already selected.
+2. Bot extracts listing links from the search page.
+3. Bot opens each listing and collects car details.
+4. Bot sends only new listings to an LLM.
+5. Bot stores scored cars in a local cache grouped by model.
+6. Bot returns the top results across all cached cars for that model.
+
+## Setup
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m playwright install chromium
+copy .env.example .env
+```
+
+Fill `.env`:
+
+```text
+TELEGRAM_BOT_TOKEN=...
+LLM_PROVIDER=gemini
+LLM_SYSTEM_PROMPT=Ты опытный эксперт по подбору автомобилей...
+CAR_CACHE_PATH=./data/car_cache.json
+GEMINI_API_KEY=...
+```
+
+The app loads `.env` automatically.
+
+## Run
+
+```powershell
+python main.py
+```
+
+## Test Without Telegram
+
+Parse a few ads without LLM:
+
+```powershell
+python test_run.py "https://auto.ru/..." --limit 5 --no-llm
+```
+
+Run the full parser plus cache update:
+
+```powershell
+python test_run.py "https://auto.ru/..." --limit 10 --top 5
+```
+
+For OpenAI instead of Gemini, set:
+
+```text
+LLM_PROVIDER=openai
+OPENAI_API_KEY=...
+```
+
+## User Commands
+
+- `/start` - short help.
+- `/top 5` - set result count for the current bot process.
+
+## Telegram Menu
+
+- `Показать топ` - choose a cached model and show top 3 ads by rating.
+- `Анализ объявлений` - send an Auto.ru search URL, evaluate new ads, update cache, and show the current top.
+
+## Architecture
+
+- `main.py` - Telegram bot entrypoint.
+- `providers/base.py` - provider contract for Auto.ru, Drom, and future sources.
+- `providers/autoru_provider.py` - Auto.ru scraper.
+- `models/car.py` - normalized car and ranking models.
+- `service/ai_service.py` - LLM scoring.
+- `storage/storage.py` - small JSON storage helper.
+- `storage/car_cache.py` - local cache grouped by model.
