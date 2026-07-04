@@ -3,7 +3,7 @@ import logging
 import re
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit, urlunsplit
 
-from playwright.async_api import BrowserContext, Page, TimeoutError, async_playwright
+from playwright.async_api import BrowserContext, Error as PlaywrightError, Page, TimeoutError, async_playwright
 
 from config import settings
 from models.car import CarDetails
@@ -106,9 +106,9 @@ class AutoRuProvider(ListingProvider):
     async def _accept_region_dialog(self, page: Page) -> None:
         for name in ("Я согласен", "Да", "Хорошо", "Понятно"):
             try:
-                await page.get_by_role("button", name=name).click(timeout=2_000)
+                await page.get_by_role("button", name=name, exact=True).first.click(timeout=2_000)
                 return
-            except TimeoutError:
+            except (TimeoutError, PlaywrightError):
                 continue
 
     async def _scroll_results(self, page: Page) -> None:
