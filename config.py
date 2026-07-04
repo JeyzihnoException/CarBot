@@ -35,6 +35,7 @@ class Settings:
     gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
 
     browser_data_dir: str = os.getenv("BROWSER_DATA_DIR", "./browser_data")
+    browser_persistent_context: bool = _bool_env("BROWSER_PERSISTENT_CONTEXT", False)
     car_cache_path: str = os.getenv("CAR_CACHE_PATH", "./data/car_cache.json")
     headless: bool = _bool_env("HEADLESS", True)
     slow_mo_ms: int = _int_env("SLOW_MO_MS", 0)

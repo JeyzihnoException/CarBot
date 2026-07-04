@@ -29,9 +29,15 @@ LLM_PROVIDER=gemini
 LLM_SYSTEM_PROMPT=Ты опытный эксперт по подбору автомобилей...
 CAR_CACHE_PATH=./data/car_cache.json
 GEMINI_API_KEY=...
+HEADLESS=true
+BROWSER_PERSISTENT_CONTEXT=false
+MAX_ADS_TO_SCAN=10
 ```
 
 The app loads `.env` automatically.
+
+For small VPS instances, keep `BROWSER_PERSISTENT_CONTEXT=false` and start with
+`MAX_ADS_TO_SCAN=5` or `10`.
 
 ## Run
 

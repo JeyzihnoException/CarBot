@@ -12,6 +12,16 @@ from providers.base import ListingProvider
 
 logger = logging.getLogger(__name__)
 
+CHROMIUM_ARGS = [
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--disable-extensions",
+    "--disable-background-networking",
+    "--disable-sync",
+    "--no-first-run",
+    "--no-default-browser-check",
+]
+
 
 class AutoRuProvider(ListingProvider):
     source = "auto.ru"
@@ -31,7 +41,7 @@ class AutoRuProvider(ListingProvider):
                 links = self._unique_links(hrefs)
                 return links[:limit] if limit else links
             finally:
-                await context.close()
+                await self._close_context(context)
 
     async def get_car_details(self, links: list[str]) -> list[CarDetails]:
         cars: list[CarDetails] = []
@@ -46,7 +56,7 @@ class AutoRuProvider(ListingProvider):
                     except Exception:
                         logger.exception("Failed to parse Auto.ru ad: %s", url)
             finally:
-                await context.close()
+                await self._close_context(context)
         return cars
 
     def get_model_identity(self, search_url: str, cars: list[CarDetails]) -> tuple[str, str]:
@@ -70,12 +80,28 @@ class AutoRuProvider(ListingProvider):
         return f"{self.source}:unknown", "Unknown model"
 
     async def _new_context(self, playwright) -> BrowserContext:
-        return await playwright.chromium.launch_persistent_context(
-            user_data_dir=settings.browser_data_dir,
-            headless=settings.headless,
-            slow_mo=settings.slow_mo_ms,
-            viewport={"width": 1440, "height": 1000},
-        )
+        options = {
+            "headless": settings.headless,
+            "slow_mo": settings.slow_mo_ms,
+            "args": CHROMIUM_ARGS,
+        }
+        viewport = {"width": 1280, "height": 900}
+
+        if settings.browser_persistent_context:
+            return await playwright.chromium.launch_persistent_context(
+                user_data_dir=settings.browser_data_dir,
+                viewport=viewport,
+                **options,
+            )
+
+        browser = await playwright.chromium.launch(**options)
+        return await browser.new_context(viewport=viewport)
+
+    async def _close_context(self, context: BrowserContext) -> None:
+        browser = context.browser
+        await context.close()
+        if browser:
+            await browser.close()
 
     async def _accept_region_dialog(self, page: Page) -> None:
         for name in ("Я согласен", "Да", "Хорошо", "Понятно"):
