@@ -27,6 +27,7 @@ class Settings:
 
     llm_provider: str = os.getenv("LLM_PROVIDER", "gemini")
     llm_system_prompt: str = os.getenv("LLM_SYSTEM_PROMPT", "")
+    llm_proxy_url: str = os.getenv("LLM_PROXY_URL", "")
 
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     openai_model: str = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")

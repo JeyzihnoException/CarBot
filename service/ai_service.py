@@ -4,7 +4,9 @@ import logging
 import re
 from typing import Any
 
+import httpx
 from google import genai
+from google.genai import types
 from openai import AsyncOpenAI
 
 from config import settings
@@ -69,7 +71,10 @@ class LlmRanker:
         prompt = self._user_prompt(cars=cars)
 
         def call_gemini() -> str:
-            client = genai.Client(api_key=settings.gemini_api_key)
+            client = genai.Client(
+                api_key=settings.gemini_api_key,
+                http_options=self._gemini_http_options(),
+            )
             response = client.models.generate_content(
                 model=settings.gemini_model,
                 contents=prompt,
@@ -88,19 +93,49 @@ class LlmRanker:
         if not settings.openai_api_key:
             raise RuntimeError("Set OPENAI_API_KEY in environment")
 
-        client = AsyncOpenAI(api_key=settings.openai_api_key)
-        response = await client.chat.completions.create(
-            model=settings.openai_model,
-            temperature=0.2,
-            response_format={"type": "json_object"},
-            messages=[
-                {"role": "system", "content": self._system_prompt()},
-                {"role": "user", "content": self._user_prompt(cars=cars)},
-            ],
-        )
+        http_client = self._openai_http_client()
+        client = AsyncOpenAI(api_key=settings.openai_api_key, http_client=http_client)
+        try:
+            response = await client.chat.completions.create(
+                model=settings.openai_model,
+                temperature=0.2,
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": self._system_prompt()},
+                    {"role": "user", "content": self._user_prompt(cars=cars)},
+                ],
+            )
+        finally:
+            if http_client is not None:
+                await http_client.aclose()
 
         content = response.choices[0].message.content or "{}"
         return json.loads(content)
+
+    def _proxy_url(self) -> str:
+        return settings.llm_proxy_url.strip()
+
+    def _gemini_http_options(self) -> types.HttpOptions | None:
+        proxy_url = self._proxy_url()
+        if not proxy_url:
+            return None
+
+        return types.HttpOptions(
+            clientArgs={
+                "proxy": proxy_url,
+                "trust_env": False,
+            },
+        )
+
+    def _openai_http_client(self) -> httpx.AsyncClient | None:
+        proxy_url = self._proxy_url()
+        if not proxy_url:
+            return None
+
+        return httpx.AsyncClient(
+            proxy=proxy_url,
+            trust_env=False,
+        )
 
     def _user_prompt(self, cars: list[CarDetails]) -> str:
         payload = {

@@ -26,6 +26,7 @@ Fill `.env`:
 ```text
 TELEGRAM_BOT_TOKEN=...
 LLM_PROVIDER=gemini
+LLM_PROXY_URL=
 LLM_SYSTEM_PROMPT=Ты опытный эксперт по подбору автомобилей...
 CAR_CACHE_PATH=./data/car_cache.json
 GEMINI_API_KEY=...
@@ -64,6 +65,30 @@ For OpenAI instead of Gemini, set:
 ```text
 LLM_PROVIDER=openai
 OPENAI_API_KEY=...
+```
+
+## LLM Proxy Through VPS
+
+If the whole machine is connected to a VPN such as WireGuard, no app setting is needed.
+For routing only LLM requests through your VPS, start a local proxy tunnel and set
+`LLM_PROXY_URL`.
+
+SSH SOCKS tunnel example:
+
+```powershell
+ssh -N -D 127.0.0.1:1080 user@your-vps-ip
+```
+
+Then set in `.env`:
+
+```text
+LLM_PROXY_URL=socks5://127.0.0.1:1080
+```
+
+HTTP proxy URLs also work:
+
+```text
+LLM_PROXY_URL=http://127.0.0.1:8080
 ```
 
 ## User Commands
